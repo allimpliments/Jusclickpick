@@ -3,51 +3,257 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#0f172a">
   <title>Justclickpick | Order Management OS</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
     :root {
-      --bg: #f1f5f9; --card: rgba(255,255,255,0.75); --card-solid: #fff; --text: #0f172a;
-      --text-muted: #475569; --border: #e2e8f0; --primary: #3b82f6; --danger: #ef4444;
-      --success: #10b981; --warning: #f59e0b; --sidebar: #1e293b;
+      --bg: #f1f5f9;
+      --card: rgba(255, 255, 255, 0.8);
+      --card-solid: #ffffff;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --border: #e2e8f0;
+      --primary: #3b82f6;
+      --danger: #ef4444;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --sidebar: #1e293b;
     }
+
     body.dark {
-      --bg: #0f172a; --card: rgba(30,41,59,0.8); --card-solid: #1e293b; --text: #f1f5f9;
-      --text-muted: #94a3b8; --border: #334155; --sidebar: #111827;
+      --bg: #0f172a;
+      --card: rgba(30, 41, 59, 0.8);
+      --card-solid: #1e293b;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --sidebar: #111827;
     }
-    body { background: var(--bg); color: var(--text); transition: 0.2s; padding: 0; margin: 0; }
-    .app-container { display: flex; min-height: 100vh; }
-    .filter-sidebar { width: 320px; background: var(--sidebar); color: white; padding: 20px; border-radius: 0 28px 28px 0; margin-right: 20px; height: fit-content; position: sticky; top: 20px; }
-    .main-content { flex: 1; padding: 20px; }
-    .glass-card { background: var(--card); backdrop-filter: blur(12px); border-radius: 28px; border: 1px solid rgba(255,255,255,0.2); padding: 1.5rem; margin-bottom: 24px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); }
-    .btn { padding: 8px 18px; border-radius: 40px; border: none; background: var(--primary); color: white; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
-    .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
-    .btn-danger { background: var(--danger); } .btn-sm { padding: 4px 12px; font-size: 0.8rem; }
-    input, select, textarea { background: var(--card-solid); border: 1px solid var(--border); border-radius: 20px; padding: 10px 14px; width: 100%; outline: none; color: var(--text); }
-    .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-    th, td { padding: 12px 6px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; }
-    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px,1fr)); gap: 24px; }
-    .hidden { display: none !important; }
-    .toast { position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: white; padding: 12px 20px; border-radius: 50px; z-index: 1000; animation: fadein 0.3s; }
-    @keyframes fadein { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    .error-text { color: var(--danger); font-size: 0.8rem; margin-top: 8px; text-align: center; }
-    .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px); display: flex; justify-content: center; align-items: center; z-index: 2000; }
-    .modal-content { max-width: 550px; width: 90%; max-height: 85vh; overflow-y: auto; background: var(--card-solid); border-radius: 28px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-    .error-modal { border: 2px solid var(--danger); background: #fff0f0; }
-    .error-modal h3 { color: var(--danger); }
-    .city-state-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .timeline-item { background: var(--card-solid); border-radius: 16px; padding: 8px; margin-bottom: 8px; font-size: 0.75rem; border-left: 3px solid var(--primary); }
-    .followup-item { background: var(--card-solid); border-radius: 16px; padding: 8px; margin-bottom: 8px; border-left: 3px solid var(--warning); }
-    @media (max-width: 900px) { .app-container { flex-direction: column; } .filter-sidebar { width: 100%; margin-right: 0; margin-bottom: 20px; } }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      transition: 0.2s;
+      padding: 0;
+      margin: 0;
+    }
+
+    /* App container */
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar filter */
+    .filter-sidebar {
+      width: 280px;
+      background: var(--sidebar);
+      color: white;
+      padding: 20px;
+      border-radius: 0 28px 28px 0;
+      margin-right: 20px;
+      height: fit-content;
+      position: sticky;
+      top: 20px;
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 20px;
+      min-width: 0; /* prevents overflow */
+    }
+
+    /* Cards */
+    .glass-card {
+      background: var(--card);
+      backdrop-filter: blur(12px);
+      border-radius: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 1.5rem;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 8px 18px;
+      border-radius: 40px;
+      border: none;
+      background: var(--primary);
+      color: white;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: 0.2s;
+    }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--primary);
+      color: var(--primary);
+    }
+    .btn-danger {
+      background: var(--danger);
+    }
+    .btn-sm {
+      padding: 4px 12px;
+      font-size: 0.8rem;
+    }
+    input, select, textarea {
+      background: var(--card-solid);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 10px 14px;
+      width: 100%;
+      outline: none;
+      color: var(--text);
+    }
+    .flex-between {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    /* Tables - horizontal scroll on small screens */
+    .table-wrapper {
+      overflow-x: auto;
+      width: 100%;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      min-width: 600px;
+    }
+    th, td {
+      padding: 12px 6px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: middle;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    .hidden {
+      display: none !important;
+    }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--primary);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 50px;
+      z-index: 1000;
+      animation: fadein 0.3s;
+    }
+    @keyframes fadein {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .error-text {
+      color: var(--danger);
+      font-size: 0.8rem;
+      margin-top: 8px;
+      text-align: center;
+    }
+    /* Modals */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(6px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+    }
+    .modal-content {
+      max-width: 550px;
+      width: 90%;
+      max-height: 85vh;
+      overflow-y: auto;
+      background: var(--card-solid);
+      border-radius: 28px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    .error-modal {
+      border: 2px solid var(--danger);
+      background: #fff0f0;
+    }
+    .error-modal h3 {
+      color: var(--danger);
+    }
+    .city-state-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .timeline-item {
+      background: var(--card-solid);
+      border-radius: 16px;
+      padding: 8px;
+      margin-bottom: 8px;
+      font-size: 0.75rem;
+      border-left: 3px solid var(--primary);
+    }
+    .followup-item {
+      background: var(--card-solid);
+      border-radius: 16px;
+      padding: 8px;
+      margin-bottom: 8px;
+      border-left: 3px solid var(--warning);
+    }
+    /* Responsive */
+    @media (max-width: 900px) {
+      .app-container {
+        flex-direction: column;
+      }
+      .filter-sidebar {
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: 20px;
+        position: static;
+      }
+    }
+    @media (max-width: 640px) {
+      .glass-card {
+        padding: 1rem;
+      }
+      .btn-sm {
+        padding: 4px 8px;
+        font-size: 0.7rem;
+      }
+    }
   </style>
 </head>
 <body>
 <div id="app">
+  <!-- LOGIN SCREEN -->
   <div id="loginSection" class="glass-card" style="max-width: 420px; margin: 80px auto;">
     <h2 style="text-align:center;"><i class="fas fa-chart-line"></i> Justclickpick</h2>
     <p style="text-align:center; margin-bottom:24px;">Order Management OS</p>
@@ -61,36 +267,36 @@
   <!-- ADMIN DASHBOARD -->
   <div id="adminDash" class="hidden app-container">
     <div class="filter-sidebar">
-      <h4><i class="fas fa-filter"></i> Advanced Filters & Export</h4>
+      <h4><i class="fas fa-filter"></i> Filters</h4>
       <input type="text" id="filterSearch" placeholder="Search order/customer...">
       <select id="filterSeller"><option value="">All Sellers</option></select>
       <select id="filterTeam"><option value="">All Teams</option></select>
       <select id="filterProduct"><option value="">All Products</option></select>
       <select id="filterStatus"><option value="">All Status</option><option>Pending</option><option>Confirmed</option><option>Processing</option><option>Shipped</option><option>Delivered</option><option>Cancelled</option><option>Returned</option><option>RTO</option></select>
-      <div class="city-state-group" style="margin-top:10px;"><input type="date" id="filterDateFrom" placeholder="From Date"><input type="date" id="filterDateTo" placeholder="To Date"></div>
-      <button id="applyFiltersBtn" class="btn-sm btn" style="width:100%; margin-top:10px;">Apply Filters</button>
+      <div class="city-state-group" style="margin-top:10px;"><input type="date" id="filterDateFrom"><input type="date" id="filterDateTo"></div>
+      <button id="applyFiltersBtn" class="btn-sm btn" style="width:100%; margin-top:10px;">Apply</button>
       <hr style="margin:20px 0;">
-      <h4>Quick Stats (Filtered)</h4>
+      <h4>Quick Stats</h4>
       <div id="quickStatsSidebar"></div>
       <hr style="margin:20px 0;">
-      <h4>📎 Export Report</h4>
-      <select id="exportMetric"><option value="orders">Orders Count</option><option value="pending">Pending Count</option><option value="delivered">Delivered Count</option><option value="revenue">Revenue (₹)</option><option value="profit">Profit (₹)</option></select>
-      <button id="exportReportBtn" class="btn-sm btn-outline" style="width:100%; margin-top:10px;">Export Selected Metric</button>
-      <button id="exportFullReportBtn" class="btn-sm btn-outline" style="width:100%; margin-top:5px;">Export Full Orders CSV</button>
+      <h4>📎 Export</h4>
+      <select id="exportMetric"><option value="orders">Orders Count</option><option value="pending">Pending</option><option value="delivered">Delivered</option><option value="revenue">Revenue</option><option value="profit">Profit</option></select>
+      <button id="exportReportBtn" class="btn-sm btn-outline" style="width:100%; margin-top:10px;">Export Metric</button>
+      <button id="exportFullReportBtn" class="btn-sm btn-outline" style="width:100%; margin-top:5px;">Export Orders CSV</button>
     </div>
     <div class="main-content">
       <div class="flex-between"><h2>Admin Dashboard</h2><div><button id="adminProfileBtn" class="btn-outline btn-sm"><i class="fas fa-user-edit"></i> Profile</button><button id="adminLogout" class="btn-outline btn-sm">Logout</button><button id="darkAdmin" class="btn-outline btn-sm"><i class="fas fa-moon"></i></button></div></div>
       <div class="glass-card"><div id="adminKPIs" class="grid-2" style="gap:16px;"></div><div class="flex-between"><span id="refreshTime"></span><button id="refreshAdminBtn" class="btn-sm"><i class="fas fa-sync-alt"></i> Refresh</button></div></div>
-      <div class="tab-buttons" style="display:flex; gap:12px; border-bottom:1px solid var(--border); margin-bottom:20px;">
+      <div class="tab-buttons" style="display:flex; gap:12px; border-bottom:1px solid var(--border); margin-bottom:20px; flex-wrap:wrap;">
         <button class="tab-btn active" data-tab="orders">📦 Orders</button>
         <button class="tab-btn" data-tab="products">🛍️ Products</button>
         <button class="tab-btn" data-tab="sellers">🏪 Sellers</button>
         <button class="tab-btn" data-tab="teams">👥 Teams</button>
         <button class="tab-btn" data-tab="analytics">📊 Analytics</button>
       </div>
-      <div id="tabOrders" class="tab-content"><div class="glass-card"><div style="overflow-x:auto;"><table id="adminOrdersTable"><thead><tr><th>OrderID</th><th>Customer</th><th>Product</th><th>Seller</th><th>Qty</th><th>Amount</th><th>Profit</th><th>Status</th><th>Team</th><th>Actions</th></table></thead><tbody></tbody></td></div></div></div>
+      <div id="tabOrders" class="tab-content"><div class="glass-card"><div class="flex-between"><h3>All Orders</h3><button id="exportOrdersCSV" class="btn-sm btn-outline">Export View</button></div><div class="table-wrapper"><table id="adminOrdersTable"><thead><tr><th>OrderID</th><th>Customer</th><th>Product</th><th>Seller</th><th>Qty</th><th>Amount</th><th>Profit</th><th>Status</th><th>Team</th><th>Actions</th></tr></thead><tbody></tbody></table></div></div></div>
       <div id="tabProducts" class="tab-content hidden"><div class="glass-card"><div class="flex-between"><h3>Products</h3><button id="adminAddProductBtn" class="btn-sm btn">+ Add Product</button></div><div id="adminProductList"></div></div></div>
-      <div id="tabSellers" class="tab-content hidden"><div class="glass-card"><div class="flex-between"><h3>Sellers</h3><button id="adminAddSellerBtn" class="btn-sm btn">+ Add Seller</button></div><div id="sellerPerformanceTable"></div></div></div>
+      <div id="tabSellers" class="tab-content hidden"><div class="glass-card"><div class="flex-between"><h3>Sellers</h3><button id="adminAddSellerBtn" class="btn-sm btn">+ Add Seller</button></div><div class="table-wrapper"><div id="sellerPerformanceTable"></div></div></div></div>
       <div id="tabTeams" class="tab-content hidden"><div class="glass-card"><div class="flex-between"><h3>Team Members</h3><button id="addTeamMemberBtn" class="btn-sm btn">+ Add Team</button></div><div id="teamMembersList"></div></div></div>
       <div id="tabAnalytics" class="tab-content hidden"><div class="glass-card"><canvas id="topProductsChart" height="180"></canvas></div><div class="glass-card"><canvas id="sellerProfitChart" height="180"></canvas></div></div>
     </div>
@@ -99,26 +305,26 @@
   <!-- TEAM DASHBOARD -->
   <div id="teamDash" class="hidden" style="padding:20px;">
     <div class="flex-between"><h2>Team Panel: <span id="teamNameSpan"></span></h2><div><button id="teamProfileBtn" class="btn-outline btn-sm"><i class="fas fa-user-edit"></i> Profile</button><button id="teamLogout" class="btn-outline btn-sm">Logout</button><button id="darkTeam" class="btn-outline btn-sm">Dark</button></div></div>
-    <div class="glass-card"><h3>Create Order</h3><div class="grid-2"><div><input id="teamCustName" placeholder="Customer Name *"><div style="display:flex;"><span style="background:var(--card-solid);padding:10px;">+91</span><input id="teamCustPhone" placeholder="Phone *"></div><input id="teamAltPhone" placeholder="Alternate"><input id="teamEmail" placeholder="Email"><input id="teamAddress" placeholder="Address *"><input id="teamLandmark" placeholder="Landmark"><div class="city-state-group"><input list="stateList" id="teamState" placeholder="State *"><datalist id="stateList"></datalist><input list="cityList" id="teamCity" placeholder="City *"><datalist id="cityList"></datalist></div><input id="teamPincode" placeholder="Pincode *"></div><div><select id="teamProductSelect"></select><input id="teamQty" type="number" value="1"><div><img id="teamPreviewImg" width="50"><span id="teamPreviewText"></span></div><button id="teamCreateOrderBtn" class="btn">Place Order</button></div></div></div>
-    <div class="glass-card"><h3>🔥 Trending Products (Upsell)</h3><div id="trendingProductsList" class="grid-2" style="grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap:20px;"></div></div>
-    <div class="glass-card"><h3>📋 My Orders</h3><div style="overflow-x:auto;"><table id="teamOrdersTable"><thead><tr><th>OrderID</th><th>Customer</th><th>Product</th><th>Qty</th><th>Status</th><th>Update</th><th>Upload</th><th>WhatsApp</th><th>Follow-up</th><th>Timeline</th></tr></thead><tbody></tbody></table></div></div>
+    <div class="glass-card"><h3>Create Order</h3><div class="grid-2"><div><input id="teamCustName" placeholder="Customer Name *"><div style="display:flex;"><span style="background:var(--card-solid);padding:10px;border-radius:20px;">+91</span><input id="teamCustPhone" placeholder="Phone *"></div><input id="teamAltPhone" placeholder="Alternate"><input id="teamEmail" placeholder="Email"><input id="teamAddress" placeholder="Address *"><input id="teamLandmark" placeholder="Landmark"><div class="city-state-group"><input list="stateList" id="teamState" placeholder="State *"><datalist id="stateList"></datalist><input list="cityList" id="teamCity" placeholder="City *"><datalist id="cityList"></datalist></div><input id="teamPincode" placeholder="Pincode *"></div><div><select id="teamProductSelect"></select><input id="teamQty" type="number" value="1"><div><img id="teamPreviewImg" width="50" style="border-radius:12px;"><span id="teamPreviewText"></span></div><button id="teamCreateOrderBtn" class="btn" style="margin-top:12px;">Place Order</button></div></div></div>
+    <div class="glass-card"><h3>🔥 Trending Products (Upsell)</h3><div id="trendingProductsList" class="grid-2" style="grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap:20px;"></div></div>
+    <div class="glass-card"><h3>📋 My Orders</h3><div class="table-wrapper"><table id="teamOrdersTable"><thead><tr><th>OrderID</th><th>Customer</th><th>Product</th><th>Qty</th><th>Status</th><th>Update</th><th>Upload</th><th>WhatsApp</th><th>Follow-up</th><th>Timeline</th></tr></thead><tbody></tbody></table></div></div>
   </div>
 
-  <!-- MODALS -->
+  <!-- MODALS (same as before) -->
   <div id="profileModal" class="modal" style="display:none;"><div class="modal-content"><h3>Edit Profile</h3><input id="profileName"><input id="profileEmail"><input id="profileMobile"><input id="profileUsername"><input id="profilePassword" placeholder="New Password"><button id="saveProfileBtn" class="btn">Save</button><button id="closeProfileModal" class="btn-outline">Cancel</button></div></div>
   <div id="editOrderModal" class="modal" style="display:none;"><div class="modal-content"><h3>Edit Customer Details</h3><div id="editOrderFields"></div><button id="saveOrderEditBtn" class="btn">Save</button><button id="closeEditModal" class="btn-outline">Cancel</button></div></div>
-  <div id="followupModal" class="modal" style="display:none;"><div class="modal-content"><h3>📞 Follow-up Actions</h3><div id="followupDetails"></div><textarea id="newFollowupNote" rows="2" placeholder="Add follow-up note..."></textarea><select id="followupType"><option>Call Back</option><option>WhatsApp Reminder</option><option>Payment Follow-up</option><option>Address Verification</option><option>Shipping Update</option></select><button id="addFollowupBtn" class="btn-sm">Add Follow-up</button><button id="closeFollowupModal" class="btn-outline">Close</button></div></div>
+  <div id="followupModal" class="modal" style="display:none;"><div class="modal-content"><h3>📞 Follow-up Actions</h3><div id="followupDetails"></div><textarea id="newFollowupNote" rows="2" placeholder="Add note..."></textarea><select id="followupType"><option>Call Back</option><option>WhatsApp Reminder</option><option>Payment Follow-up</option><option>Address Verification</option><option>Shipping Update</option></select><button id="addFollowupBtn" class="btn-sm">Add Follow-up</button><button id="closeFollowupModal" class="btn-outline">Close</button></div></div>
   <div id="timelineModal" class="modal" style="display:none;"><div class="modal-content"><h3>⏱️ Order Journey & Customer History</h3><div id="timelineDetails"></div><button id="closeTimelineModal" class="btn-outline">Close</button></div></div>
-  <div id="addProductModal" class="modal" style="display:none;"><div class="modal-content"><h3>Add/Edit Product</h3><input id="prodId" type="hidden"><input id="prodName" placeholder="Product Name"><input id="prodSP" type="number" placeholder="Selling Price"><input id="prodCP" type="number" placeholder="Cost Price"><select id="prodSeller"></select><div><label>Image URL or Upload:</label><input id="prodImageUrl" placeholder="https://..."><input type="file" id="prodImageFile" accept="image/*,video/*"><div id="prodMediaPreview"></div></div><button id="confirmProductBtn" class="btn">Save Product</button><button id="closeProductModal" class="btn-outline">Cancel</button></div></div>
-  <div id="addTeamModal" class="modal" style="display:none;"><div class="modal-content"><h3>Add/Edit Team Member</h3><input id="teamId" type="hidden"><input id="teamFullName" placeholder="Full Name"><input id="teamEmailId" placeholder="Email"><input id="teamMobile" placeholder="Mobile (+91)"><input id="teamUsername" placeholder="Username"><input id="teamPwd" placeholder="Password"><button id="saveTeamBtn" class="btn">Save</button><button id="closeTeamModal" class="btn-outline">Cancel</button></div></div>
-  <div id="editSellerModal" class="modal" style="display:none;"><div class="modal-content"><h3>Edit Seller</h3><input id="editSellerId" readonly><input id="editSellerName" placeholder="Seller Name"><input id="editSellerContact" placeholder="Mobile Number"><input id="editSellerEmail" placeholder="Email"><input id="editSellerAddress" placeholder="Address"><button id="updateSellerBtn" class="btn">Update</button><button id="closeSellerModal" class="btn-outline">Cancel</button></div></div>
-  <div id="addSellerDetailModal" class="modal" style="display:none;"><div class="modal-content"><h3>Add New Seller (Full Details)</h3><input id="newSellerName" placeholder="Full Name *"><input id="newSellerContact" placeholder="Mobile Number *"><input id="newSellerEmail" placeholder="Email"><input id="newSellerAddress" placeholder="Address"><button id="confirmAddSellerBtn" class="btn">Add Seller</button><button id="closeSellerAddModal" class="btn-outline">Cancel</button></div></div>
-  <div id="duplicateErrorModal" class="modal" style="display:none;"><div class="modal-content error-modal"><h3><i class="fas fa-exclamation-triangle"></i> Duplicate Customer Detected</h3><p id="duplicateErrorMessage"></p><div class="flex-between" style="margin-top:15px;"><button id="continueWithNewOrder" class="btn">Continue with New Order</button><button id="cancelDuplicateOrder" class="btn-outline">Cancel Order</button></div></div></div>
-  <div id="confirmOrderModal" class="modal" style="display:none;"><div class="modal-content"><h3>Confirm Order Details</h3><div id="confirmOrderDetails"></div><div class="flex-between" style="margin-top:20px;"><button id="editBeforeConfirmBtn" class="btn-outline">Edit Details</button><button id="proceedConfirmBtn" class="btn">Confirm & Place Order</button></div></div></div>
+  <div id="addProductModal" class="modal" style="display:none;"><div class="modal-content"><h3>Add/Edit Product</h3><input id="prodId" type="hidden"><input id="prodName" placeholder="Name"><input id="prodSP" type="number" placeholder="Selling Price"><input id="prodCP" type="number" placeholder="Cost Price"><select id="prodSeller"></select><div><label>Image URL or Upload:</label><input id="prodImageUrl" placeholder="https://..."><input type="file" id="prodImageFile" accept="image/*,video/*"><div id="prodMediaPreview"></div></div><button id="confirmProductBtn" class="btn">Save</button><button id="closeProductModal" class="btn-outline">Cancel</button></div></div>
+  <div id="addTeamModal" class="modal" style="display:none;"><div class="modal-content"><h3>Add/Edit Team</h3><input id="teamId" type="hidden"><input id="teamFullName" placeholder="Full Name"><input id="teamEmailId" placeholder="Email"><input id="teamMobile" placeholder="Mobile (+91)"><input id="teamUsername" placeholder="Username"><input id="teamPwd" placeholder="Password"><button id="saveTeamBtn" class="btn">Save</button><button id="closeTeamModal" class="btn-outline">Cancel</button></div></div>
+  <div id="editSellerModal" class="modal" style="display:none;"><div class="modal-content"><h3>Edit Seller</h3><input id="editSellerId" readonly><input id="editSellerName"><input id="editSellerContact"><input id="editSellerEmail"><input id="editSellerAddress"><button id="updateSellerBtn" class="btn">Update</button><button id="closeSellerModal" class="btn-outline">Cancel</button></div></div>
+  <div id="addSellerDetailModal" class="modal" style="display:none;"><div class="modal-content"><h3>Add Seller</h3><input id="newSellerName" placeholder="Full Name *"><input id="newSellerContact" placeholder="Mobile *"><input id="newSellerEmail" placeholder="Email"><input id="newSellerAddress" placeholder="Address"><button id="confirmAddSellerBtn" class="btn">Add</button><button id="closeSellerAddModal" class="btn-outline">Cancel</button></div></div>
+  <div id="duplicateErrorModal" class="modal" style="display:none;"><div class="modal-content error-modal"><h3><i class="fas fa-exclamation-triangle"></i> Duplicate Customer</h3><p id="duplicateErrorMessage"></p><div class="flex-between" style="margin-top:15px;"><button id="continueWithNewOrder" class="btn">Continue</button><button id="cancelDuplicateOrder" class="btn-outline">Cancel</button></div></div></div>
+  <div id="confirmOrderModal" class="modal" style="display:none;"><div class="modal-content"><h3>Confirm Order</h3><div id="confirmOrderDetails"></div><div class="flex-between" style="margin-top:20px;"><button id="editBeforeConfirmBtn" class="btn-outline">Edit</button><button id="proceedConfirmBtn" class="btn">Confirm</button></div></div></div>
 
 <script>
   (function() {
-    // ---------- DATA MODELS ----------
+    // ---------- HARDCODED USERS ----------
     const HARDCODED_USERS = [
       { id: "admin1", role: "admin", name: "Admin", email: "admin@justclick.com", mobile: "+919999999999", username: "admin", password: "admin123" },
       { id: "team1", role: "team", name: "Support Team", email: "team@justclick.com", mobile: "+919876543211", username: "support", password: "team123" }
@@ -227,7 +433,7 @@
       </tr>`).join('');
       let prodHtml = ""; products.forEach(p => { let seller = sellers.find(s=>s.id===p.sellerId); prodHtml += `<div class="flex-between"><div>${renderMedia(p.media, p.mediaType, 40)} ${p.name} (₹${p.sellingPrice}) | Seller: ${seller?.name}</div><div><button class="editProdAdmin" data-id="${p.id}">✏️</button><button class="delProdAdmin" data-id="${p.id}">🗑️</button></div></div>`; });
       document.getElementById("adminProductList").innerHTML = prodHtml;
-      let sellerHtml = `<table><thead><tr><th>ID</th><th>Name</th><th>Contact</th><th>Email</th><th>Orders</th><th>Delivered</th><th>RTO</th><th>Returns</th><th>Profit</th><th>Total Sale</th><th>Actions</th></tr></thead><tbody>`;
+      let sellerHtml = `<div class="table-wrapper"><table><thead><tr><th>ID</th><th>Name</th><th>Contact</th><th>Email</th><th>Orders</th><th>Delivered</th><th>RTO</th><th>Returns</th><th>Profit</th><th>Total Sale</th><th>Actions</th></tr></thead><tbody>`;
       sellers.forEach(s => {
         let so = orders.filter(o=>o.sellerId===s.id);
         let delivered = so.filter(o=>o.status==="Delivered").length, rto = so.filter(o=>o.status==="RTO").length, returns = so.filter(o=>o.status==="Returned").length;
@@ -244,9 +450,9 @@
           <td>₹${profitSum}</td>
           <td>₹${revenueSum}</td>
           <td><button class="editSellerAdmin" data-id="${s.id}">✏️</button> <button class="deleteSellerAdmin" data-id="${s.id}">🗑️</button></td>
-        <tr>`;
+        </td>`;
       });
-      sellerHtml += `</tbody></table>`;
+      sellerHtml += `</tbody></table></div>`;
       document.getElementById("sellerPerformanceTable").innerHTML = sellerHtml;
       let teamHtml = ""; teams.forEach(t => { teamHtml += `<div class="flex-between"><span>${t.name} (${t.email})<br><small>${t.phone}</small></span><div><button class="editTeamAdmin" data-id="${t.id}">✏️</button><button class="deleteTeamAdmin" data-id="${t.id}">🗑️</button></div></div>`; });
       document.getElementById("teamMembersList").innerHTML = teamHtml;
@@ -489,7 +695,7 @@
     function logout() { currentUser = null; localStorage.removeItem("jc_currentUser"); document.querySelectorAll("#adminDash,#teamDash").forEach(el=>el.classList.add("hidden")); document.getElementById("loginSection").classList.remove("hidden"); }
     function toast(msg) { let t=document.createElement("div"); t.className="toast"; t.innerText=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2500); }
 
-    // ---------- EVENT DELEGATION (for dynamic buttons) ----------
+    // ---------- EVENT DELEGATION ----------
     function setupDelegatedEvents() {
       document.addEventListener('click', function(e) {
         // Admin events
@@ -599,14 +805,15 @@
         }
         if(e.target.classList && e.target.classList.contains('whatsappTeamBtn')) {
           let phone = e.target.getAttribute('data-phone');
-          if(!phone || phone.length < 10) { toast("Invalid customer phone number"); return; }
+          if(!phone) { toast("No customer phone"); return; }
+          let cleanPhone = phone.replace(/\D/g, '');
+          if(cleanPhone.length < 10) { toast("Invalid phone number"); return; }
           let orderId = e.target.getAttribute('data-order');
           let status = e.target.getAttribute('data-status');
           let img = e.target.getAttribute('data-img');
           let imgType = e.target.getAttribute('data-imgtype');
           let mediaMsg = img ? (imgType === 'video' ? `Product video: ${img}` : `Product image: ${img}`) : "";
           let msg = `✅ Order ${orderId} update: Status is ${status}. ${mediaMsg}`;
-          let cleanPhone = phone.replace(/\D/g, '');
           window.open(`https://wa.me/91${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
         }
         if(e.target.classList && e.target.classList.contains('followupTeamBtn')) {
