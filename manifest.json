@@ -1,0 +1,16 @@
+{
+  "name": "Justclickpick",
+  "short_name": "Justclickpick",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "description": "Order Management OS for Dropshipping & Ecommerce",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1046/1046784.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

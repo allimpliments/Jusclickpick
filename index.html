@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <title>Justclickpick | Order Management OS</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
+    :root {
+      --bg: #f1f5f9; --card: rgba(255,255,255,0.75); --card-solid: #fff; --text: #0f172a;
+      --text-muted: #475569; --border: #e2e8f0; --primary: #3b82f6; --danger: #ef4444;
+      --success: #10b981; --warning: #f59e0b; --sidebar: #1e293b;
+    }
+    body.dark {
+      --bg: #0f172a; --card: rgba(30,41,59,0.8); --card-solid: #1e293b; --text: #f1f5f9;
+      --text-muted: #94a3b8; --border: #334155; --sidebar: #111827;
+    }
+    body { background: var(--bg); color: var(--text); transition: 0.2s; padding: 0; margin: 0; }
+    .app-container { display: flex; min-height: 100vh; }
+    .filter-sidebar { width: 320px; background: var(--sidebar); color: white; padding: 20px; border-radius: 0 28px 28px 0; margin-right: 20px; height: fit-content; position: sticky; top: 20px; }
+    .main-content { flex: 1; padding: 20px; }
+    .glass-card { background: var(--card); backdrop-filter: blur(12px); border-radius: 28px; border: 1px solid rgba(255,255,255,0.2); padding: 1.5rem; margin-bottom: 24px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); }
+    .btn { padding: 8px 18px; border-radius: 40px; border: none; background: var(--primary); color: white; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+    .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+    .btn-danger { background: var(--danger); } .btn-sm { padding: 4px 12px; font-size: 0.8rem; }
+    input, select, textarea { background: var(--card-solid); border: 1px solid var(--border); border-radius: 20px; padding: 10px 14px; width: 100%; outline: none; color: var(--text); }
+    .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    th, td { padding: 12px 6px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px,1fr)); gap: 24px; }
+    .hidden { display: none !important; }
+    .toast { position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: white; padding: 12px 20px; border-radius: 50px; z-index: 1000; animation: fadein 0.3s; }
+    @keyframes fadein { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .error-text { color: var(--danger); font-size: 0.8rem; margin-top: 8px; text-align: center; }
+    .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px); display: flex; justify-content: center; align-items: center; z-index: 2000; }
+    .modal-content { max-width: 550px; width: 90%; max-height: 85vh; overflow-y: auto; background: var(--card-solid); border-radius: 28px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+    .error-modal { border: 2px solid var(--danger); background: #fff0f0; }
+    .error-modal h3 { color: var(--danger); }
+    .city-state-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .timeline-item { background: var(--card-solid); border-radius: 16px; padding: 8px; margin-bottom: 8px; font-size: 0.75rem; border-left: 3px solid var(--primary); }
+    .followup-item { background: var(--card-solid); border-radius: 16px; padding: 8px; margin-bottom: 8px; border-left: 3px solid var(--warning); }
+    @media (max-width: 900px) { .app-container { flex-direction: column; } .filter-sidebar { width: 100%; margin-right: 0; margin-bottom: 20px; } }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="loginSection" class="glass-card" style="max-width: 420px; margin: 80px auto;">
+    <h2 style="text-align:center;"><i class="fas fa-chart-line"></i> Justclickpick</h2>
+    <p style="text-align:center; margin-bottom:24px;">Order Management OS</p>
+    <input type="text" id="loginIdentifier" placeholder="Email / Mobile / Username" style="margin-bottom:12px">
+    <input type="password" id="loginPassword" placeholder="Password" style="margin-bottom:8px">
+    <div id="loginError" class="error-text"></div>
+    <button id="doLoginBtn" class="btn" style="width:100%; margin-top:8px;">Login</button>
+    <button id="darkToggleLogin" class="btn-outline btn-sm" style="margin-top:12px; width:100%;">Dark Mode</button>
+  </div>
+
+  <!-- ADMIN DASHBOARD -->
+  <div id="adminDash" class="hidden app-container">
+    <div class="filter-sidebar">
+      <h4><i class="fas fa-filter"></i> Advanced Filters & Export</h4>
+      <input type="text" id="filterSearch" placeholder="Search order/customer...">
+      <select id="filterSeller"><option value="">All Sellers</option></select>
+      <select id="filterTeam"><option value="">All Teams</option></select>
+      <select id="filterProduct"><option value="">All Products</option></select>
+      <select id="filterStatus"><option value="">All Status</option><option>Pending</option><option>Confirmed</option><option>Processing</option><option>Shipped</option><option>Delivered</option><option>Cancelled</option><option>Returned</option><option>RTO</option></select>
+      <div class="city-state-group" style="margin-top:10px;"><input type="date" id="filterDateFrom" placeholder="From Date"><input type="date" id="filterDateTo" placeholder="To Date"></div>
+      <button id="applyFiltersBtn" class="btn-sm btn" style="width:100%; margin-top:10px;">Apply Filters</button>
+      <hr style="margin:20px 0;">
+      <h4>Quick Stats (Filtered)</h4>
+      <div id="quickStatsSidebar"></div>
+      <hr style="margin:20px 0;">
+      <h4>📎 Export Report</h4>
+      <select id="exportMetric"><option value="orders">Orders Count</option><option value="pending">Pending Count</option><option value="delivered">Delivered Count</option><option value="revenue">Revenue (₹)</option><option value="profit">Profit (₹)</option></select>
+      <button id="exportReportBtn" class="btn-sm btn-outline" style="width:100%; margin-top:10px;">Export Selected Metric</button>
+      <button id="exportFullReportBtn" class="btn-sm btn-outline" style="width:100%; margin-top:5px;">Export Full Orders CSV</button>
+    </div>
+    <div class="main-content">
+      <div class="flex-between"><h2>Admin Dashboard</h2><div><button id="adminProfileBtn" class="btn-outline btn-sm"><i class="fas fa-user-edit"></i> Profile</button><button id="adminLogout" class="btn-outline btn-sm">Logout</button><button id="darkAdmin" class="btn-outline btn-sm"><i class="fas fa-moon"></i></button></div></div>
+      <div class="glass-card"><div id="adminKPIs" class="grid-2" style="gap:16px;"></div><div class="flex-between"><span id="refreshTime"></span><button id="refreshAdminBtn" class="btn-sm"><i class="fas fa-sync-alt"></i> Refresh</button></div></div>
+      <div class="tab-buttons" style="display:flex; gap:12px; border-bottom:1px solid var(--border); margin-bottom:20px;">
+        <button class="tab-btn active" data-tab="orders">📦 Orders</button>
+        <button class="tab-btn" data-tab="products">🛍️ Products</button>
+        <button class="tab-btn" data-tab="sellers">🏪 Sellers</button>
+        <button class="tab-btn" data-tab="teams">👥 Teams</button>
+        <button class="tab-btn" data-tab="analytics">📊 Analytics</button>
+      </div>
+      <div id="tabOrders" class="tab-content"><div class="glass-card"><div style="overflow-x:auto;"><table id="adminOrdersTable"><thead><tr><th>OrderID</th><th>Customer</th><th>Product</th><th>Seller</th><th>Qty</th><th>Amount</th><th>Profit</th><th>Status</th><th>Team</th><th>Actions</th></table></thead><tbody></tbody></td></div></div></div>
+      <div id="tabProducts" class="tab-content hidden"><div class="glass-card"><div class="flex-between"><h3>Products</h3><button id="adminAddProductBtn" class="btn-sm btn">+ Add Product</button></div><div id="adminProductList"></div></div></div>
+      <div id="tabSellers" class="tab-content hidden"><div class="glass-card"><div class="flex-between"><h3>Sellers</h3><button id="adminAddSellerBtn" class="btn-sm btn">+ Add Seller</button></div><div id="sellerPerformanceTable"></div></div></div>
+      <div id="tabTeams" class="tab-content hidden"><div class="glass-card"><div class="flex-between"><h3>Team Members</h3><button id="addTeamMemberBtn" class="btn-sm btn">+ Add Team</button></div><div id="teamMembersList"></div></div></div>
+      <div id="tabAnalytics" class="tab-content hidden"><div class="glass-card"><canvas id="topProductsChart" height="180"></canvas></div><div class="glass-card"><canvas id="sellerProfitChart" height="180"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- TEAM DASHBOARD -->
+  <div id="teamDash" class="hidden" style="padding:20px;">
+    <div class="flex-between"><h2>Team Panel: <span id="teamNameSpan"></span></h2><div><button id="teamProfileBtn" class="btn-outline btn-sm"><i class="fas fa-user-edit"></i> Profile</button><button id="teamLogout" class="btn-outline btn-sm">Logout</button><button id="darkTeam" class="btn-outline btn-sm">Dark</button></div></div>
+    <div class="glass-card"><h3>Create Order</h3><div class="grid-2"><div><input id="teamCustName" placeholder="Customer Name *"><div style="display:flex;"><span style="background:var(--card-solid);padding:10px;">+91</span><input id="teamCustPhone" placeholder="Phone *"></div><input id="teamAltPhone" placeholder="Alternate"><input id="teamEmail" placeholder="Email"><input id="teamAddress" placeholder="Address *"><input id="teamLandmark" placeholder="Landmark"><div class="city-state-group"><input list="stateList" id="teamState" placeholder="State *"><datalist id="stateList"></datalist><input list="cityList" id="teamCity" placeholder="City *"><datalist id="cityList"></datalist></div><input id="teamPincode" placeholder="Pincode *"></div><div><select id="teamProductSelect"></select><input id="teamQty" type="number" value="1"><div><img id="teamPreviewImg" width="50"><span id="teamPreviewText"></span></div><button id="teamCreateOrderBtn" class="btn">Place Order</button></div></div></div>
+    <div class="glass-card"><h3>🔥 Trending Products (Upsell)</h3><div id="trendingProductsList" class="grid-2" style="grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap:20px;"></div></div>
+    <div class="glass-card"><h3>📋 My Orders</h3><div style="overflow-x:auto;"><table id="teamOrdersTable"><thead><tr><th>OrderID</th><th>Customer</th><th>Product</th><th>Qty</th><th>Status</th><th>Update</th><th>Upload</th><th>WhatsApp</th><th>Follow-up</th><th>Timeline</th></tr></thead><tbody></tbody></table></div></div>
+  </div>
+
+  <!-- MODALS -->
+  <div id="profileModal" class="modal" style="display:none;"><div class="modal-content"><h3>Edit Profile</h3><input id="profileName"><input id="profileEmail"><input id="profileMobile"><input id="profileUsername"><input id="profilePassword" placeholder="New Password"><button id="saveProfileBtn" class="btn">Save</button><button id="closeProfileModal" class="btn-outline">Cancel</button></div></div>
+  <div id="editOrderModal" class="modal" style="display:none;"><div class="modal-content"><h3>Edit Customer Details</h3><div id="editOrderFields"></div><button id="saveOrderEditBtn" class="btn">Save</button><button id="closeEditModal" class="btn-outline">Cancel</button></div></div>
+  <div id="followupModal" class="modal" style="display:none;"><div class="modal-content"><h3>📞 Follow-up Actions</h3><div id="followupDetails"></div><textarea id="newFollowupNote" rows="2" placeholder="Add follow-up note..."></textarea><select id="followupType"><option>Call Back</option><option>WhatsApp Reminder</option><option>Payment Follow-up</option><option>Address Verification</option><option>Shipping Update</option></select><button id="addFollowupBtn" class="btn-sm">Add Follow-up</button><button id="closeFollowupModal" class="btn-outline">Close</button></div></div>
+  <div id="timelineModal" class="modal" style="display:none;"><div class="modal-content"><h3>⏱️ Order Journey & Customer History</h3><div id="timelineDetails"></div><button id="closeTimelineModal" class="btn-outline">Close</button></div></div>
+  <div id="addProductModal" class="modal" style="display:none;"><div class="modal-content"><h3>Add/Edit Product</h3><input id="prodId" type="hidden"><input id="prodName" placeholder="Product Name"><input id="prodSP" type="number" placeholder="Selling Price"><input id="prodCP" type="number" placeholder="Cost Price"><select id="prodSeller"></select><div><label>Image URL or Upload:</label><input id="prodImageUrl" placeholder="https://..."><input type="file" id="prodImageFile" accept="image/*,video/*"><div id="prodMediaPreview"></div></div><button id="confirmProductBtn" class="btn">Save Product</button><button id="closeProductModal" class="btn-outline">Cancel</button></div></div>
+  <div id="addTeamModal" class="modal" style="display:none;"><div class="modal-content"><h3>Add/Edit Team Member</h3><input id="teamId" type="hidden"><input id="teamFullName" placeholder="Full Name"><input id="teamEmailId" placeholder="Email"><input id="teamMobile" placeholder="Mobile (+91)"><input id="teamUsername" placeholder="Username"><input id="teamPwd" placeholder="Password"><button id="saveTeamBtn" class="btn">Save</button><button id="closeTeamModal" class="btn-outline">Cancel</button></div></div>
+  <div id="editSellerModal" class="modal" style="display:none;"><div class="modal-content"><h3>Edit Seller</h3><input id="editSellerId" readonly><input id="editSellerName" placeholder="Seller Name"><input id="editSellerContact" placeholder="Mobile Number"><input id="editSellerEmail" placeholder="Email"><input id="editSellerAddress" placeholder="Address"><button id="updateSellerBtn" class="btn">Update</button><button id="closeSellerModal" class="btn-outline">Cancel</button></div></div>
+  <div id="addSellerDetailModal" class="modal" style="display:none;"><div class="modal-content"><h3>Add New Seller (Full Details)</h3><input id="newSellerName" placeholder="Full Name *"><input id="newSellerContact" placeholder="Mobile Number *"><input id="newSellerEmail" placeholder="Email"><input id="newSellerAddress" placeholder="Address"><button id="confirmAddSellerBtn" class="btn">Add Seller</button><button id="closeSellerAddModal" class="btn-outline">Cancel</button></div></div>
+  <div id="duplicateErrorModal" class="modal" style="display:none;"><div class="modal-content error-modal"><h3><i class="fas fa-exclamation-triangle"></i> Duplicate Customer Detected</h3><p id="duplicateErrorMessage"></p><div class="flex-between" style="margin-top:15px;"><button id="continueWithNewOrder" class="btn">Continue with New Order</button><button id="cancelDuplicateOrder" class="btn-outline">Cancel Order</button></div></div></div>
+  <div id="confirmOrderModal" class="modal" style="display:none;"><div class="modal-content"><h3>Confirm Order Details</h3><div id="confirmOrderDetails"></div><div class="flex-between" style="margin-top:20px;"><button id="editBeforeConfirmBtn" class="btn-outline">Edit Details</button><button id="proceedConfirmBtn" class="btn">Confirm & Place Order</button></div></div></div>
+
+<script>
+  (function() {
+    // ---------- DATA MODELS ----------
+    const HARDCODED_USERS = [
+      { id: "admin1", role: "admin", name: "Admin", email: "admin@justclick.com", mobile: "+919999999999", username: "admin", password: "admin123" },
+      { id: "team1", role: "team", name: "Support Team", email: "team@justclick.com", mobile: "+919876543211", username: "support", password: "team123" }
+    ];
+    let sellers = [], products = [], orders = [], teams = [], currentUser = null;
+    let userDefinedCities = [];
+    
+    const defaultCityMap = {
+      "Maharashtra": ["Mumbai","Pune","Nagpur","Nashik","Thane"],
+      "Delhi": ["New Delhi","Dwarka","Rohini","Saket"],
+      "Karnataka": ["Bangalore","Mysore","Hubli","Mangalore"],
+      "Tamil Nadu": ["Chennai","Coimbatore","Madurai","Salem"],
+      "Uttar Pradesh": ["Lucknow","Kanpur","Agra","Varanasi"],
+      "West Bengal": ["Kolkata","Howrah","Durgapur","Siliguri"],
+      "Madhya Pradesh": ["Bhopal","Indore","Gwalior","Jabalpur","Ujjain","Sagar","Ratlam","Rewa"],
+      "Gujarat": ["Ahmedabad","Surat","Vadodara","Rajkot"],
+      "Rajasthan": ["Jaipur","Jodhpur","Udaipur","Kota"]
+    };
+
+    function generateSellerId(name) {
+      let initials = name.split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,4);
+      let base = `JCP-${initials}`;
+      let max = 0; sellers.forEach(s => { if(s.id.startsWith(base)) { let m = s.id.match(/\d+$/); if(m) max = Math.max(max, parseInt(m[0])); } });
+      return base + (max+1).toString().padStart(3,'0');
+    }
+
+    function showErrorPopup(message, onContinue = null, onCancel = null) {
+      document.getElementById("duplicateErrorMessage").innerHTML = message;
+      document.getElementById("duplicateErrorModal").style.display = "flex";
+      window.duplicateContinueCallback = onContinue;
+      window.duplicateCancelCallback = onCancel;
+    }
+
+    function initData() {
+      if(!sellers.length) sellers = [{ id:"JCP-FH001", name:"Fashion Hub", contact:"+911234567890", email:"fashion@hub.com", address:"Mumbai" }, { id:"JCP-EW002", name:"Electro World", contact:"+919876543210", email:"electro@world.com", address:"Delhi" }];
+      if(!products.length) products = [{ id:"p1", name:"Premium Hoodie", sellerId:"JCP-FH001", costPrice:800, sellingPrice:1299, stock:100, media:"https://picsum.photos/id/20/100/100", mediaType:"image", salesCount:5 }, { id:"p2", name:"Wireless Earbuds", sellerId:"JCP-EW002", costPrice:1200, sellingPrice:1999, stock:75, media:"https://picsum.photos/id/1/100/100", mediaType:"image", salesCount:12 }];
+      if(!orders.length) orders = [{ id:"ord1", orderNumber:"JCK1001", customerName:"Riya Sharma", customerPhone:"9876543210", altPhone:"", email:"", address:"Mumbai", landmark:"", state:"Maharashtra", city:"Mumbai", pincode:"400001", productId:"p1", productName:"Premium Hoodie", productMedia:products[0].media, mediaType:"image", sellerId:"JCP-FH001", sellerName:"Fashion Hub", quantity:2, sellingPrice:1299, costPrice:800, totalAmount:2598, profit:998, status:"Pending", assignedTeam:"team1", timeline:[{type:"Created", note:"Order placed", timestamp:Date.now()}], followups:[], createdAt:Date.now() }];
+      if(!teams.length) teams = [{ id:"team1", name:"Support Team", email:"team@justclick.com", password:"team123", phone:"+919876543211", username:"support" }];
+      persistAll();
+    }
+
+    function rebuildUsersArray() { 
+      window.users = [HARDCODED_USERS[0], ...teams.map(t=>({ id:t.id, role:"team", name:t.name, email:t.email, mobile:t.phone, username:t.username, password:t.password }))]; 
+    }
+    function persistAll() {
+      localStorage.setItem("jc_sellers", JSON.stringify(sellers));
+      localStorage.setItem("jc_products", JSON.stringify(products));
+      localStorage.setItem("jc_orders", JSON.stringify(orders));
+      localStorage.setItem("jc_teams", JSON.stringify(teams));
+      localStorage.setItem("jc_cities", JSON.stringify(userDefinedCities));
+      rebuildUsersArray();
+    }
+    function loadData() {
+      let s=localStorage.getItem("jc_sellers"), p=localStorage.getItem("jc_products"), o=localStorage.getItem("jc_orders"), t=localStorage.getItem("jc_teams"), c=localStorage.getItem("jc_cities");
+      if(s) sellers=JSON.parse(s); if(p) products=JSON.parse(p); if(o) orders=JSON.parse(o); if(t) teams=JSON.parse(t); if(c) userDefinedCities=JSON.parse(c);
+      if(!sellers.length || !products.length) initData(); else persistAll();
+    }
+    loadData();
+
+    function getFilteredOrders() {
+      let search = document.getElementById("filterSearch")?.value.toLowerCase() || "";
+      let sellerId = document.getElementById("filterSeller")?.value || "";
+      let teamId = document.getElementById("filterTeam")?.value || "";
+      let productId = document.getElementById("filterProduct")?.value || "";
+      let status = document.getElementById("filterStatus")?.value || "";
+      let fromDate = document.getElementById("filterDateFrom")?.value;
+      let toDate = document.getElementById("filterDateTo")?.value;
+      return orders.filter(o => {
+        if(sellerId && o.sellerId !== sellerId) return false;
+        if(teamId && o.assignedTeam !== teamId) return false;
+        if(productId && o.productId !== productId) return false;
+        if(status && o.status !== status) return false;
+        if(search && !(o.orderNumber.toLowerCase().includes(search) || o.customerName.toLowerCase().includes(search) || o.customerPhone.includes(search))) return false;
+        if(fromDate && new Date(o.createdAt) < new Date(fromDate)) return false;
+        if(toDate && new Date(o.createdAt) > new Date(toDate)) return false;
+        return true;
+      });
+    }
+
+    function updateSalesCount() { products.forEach(p => p.salesCount = orders.filter(o=>o.productId===p.id && o.status==="Delivered").reduce((s,o)=>s+o.quantity,0)); }
+    function renderMedia(media, type, width=50) { if(!media) return `<img src="https://via.placeholder.com/50" width="${width}">`; if(type === 'video') return `<video src="${media}" width="${width}" style="border-radius:12px;" controls></video>`; return `<img src="${media}" width="${width}" style="border-radius:12px;">`; }
+
+    // ---------- ADMIN RENDER ----------
+    function renderAdmin() {
+      if(!currentUser || currentUser.role !== "admin") return;
+      updateSalesCount();
+      let filtered = getFilteredOrders();
+      let totalOrders = filtered.length, pending = filtered.filter(o=>o.status==="Pending").length, delivered = filtered.filter(o=>o.status==="Delivered").length;
+      let revenue = filtered.reduce((s,o)=>s+o.totalAmount,0), profit = filtered.reduce((s,o)=>s+o.profit,0);
+      document.getElementById("adminKPIs").innerHTML = `<div class="glass-card">📦 Orders: ${totalOrders}</div><div class="glass-card">⏳ Pending: ${pending}</div><div class="glass-card">✅ Delivered: ${delivered}</div><div class="glass-card">💰 Revenue: ₹${revenue.toFixed(2)}</div><div class="glass-card">📈 Profit: ₹${profit.toFixed(2)}</div>`;
+      document.getElementById("quickStatsSidebar").innerHTML = `<div>Total: ${totalOrders}</div><div>Pending: ${pending}</div><div>Delivered: ${delivered}</div><div>Revenue: ₹${revenue.toFixed(0)}</div><div>Profit: ₹${profit.toFixed(0)}</div>`;
+      let sellerFilter = document.getElementById("filterSeller"); sellerFilter.innerHTML = '<option value="">All Sellers</option>' + sellers.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+      let teamFilter = document.getElementById("filterTeam"); teamFilter.innerHTML = '<option value="">All Teams</option>' + teams.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+      let productFilter = document.getElementById("filterProduct"); productFilter.innerHTML = '<option value="">All Products</option>' + products.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+      let tbody = document.querySelector("#adminOrdersTable tbody");
+      tbody.innerHTML = filtered.map(o => `<tr>
+        <td>${o.orderNumber}</td>
+        <td><button class="editCustomerBtn" data-id="${o.id}" style="background:none; border:none; color:var(--primary); cursor:pointer;">✏️ ${o.customerName}</button><br><small>${o.customerPhone}</small></td>
+        <td>${renderMedia(o.productMedia, o.mediaType, 30)} ${o.productName}</td>
+        <td>${o.sellerName}</td><td>${o.quantity}</td>
+        <td>₹${o.totalAmount}</td>
+        <td>₹${o.profit}</td>
+        <td><select class="adminStatusChange" data-id="${o.id}">${["Pending","Confirmed","Processing","Shipped","Delivered","Cancelled","Returned","RTO"].map(s=>`<option ${o.status===s?"selected":""}>${s}</option>`)}</select></td>
+        <td>${teams.find(t=>t.id===o.assignedTeam)?.name || '-'}</td>
+        <td><button class="viewTimelineAdmin" data-id="${o.id}">📋</button> <button class="deleteOrderAdmin" data-id="${o.id}">🗑️</button></td>
+      </tr>`).join('');
+      let prodHtml = ""; products.forEach(p => { let seller = sellers.find(s=>s.id===p.sellerId); prodHtml += `<div class="flex-between"><div>${renderMedia(p.media, p.mediaType, 40)} ${p.name} (₹${p.sellingPrice}) | Seller: ${seller?.name}</div><div><button class="editProdAdmin" data-id="${p.id}">✏️</button><button class="delProdAdmin" data-id="${p.id}">🗑️</button></div></div>`; });
+      document.getElementById("adminProductList").innerHTML = prodHtml;
+      let sellerHtml = `<table><thead><tr><th>ID</th><th>Name</th><th>Contact</th><th>Email</th><th>Orders</th><th>Delivered</th><th>RTO</th><th>Returns</th><th>Profit</th><th>Total Sale</th><th>Actions</th></tr></thead><tbody>`;
+      sellers.forEach(s => {
+        let so = orders.filter(o=>o.sellerId===s.id);
+        let delivered = so.filter(o=>o.status==="Delivered").length, rto = so.filter(o=>o.status==="RTO").length, returns = so.filter(o=>o.status==="Returned").length;
+        let profitSum = so.reduce((a,o)=>a+o.profit,0), revenueSum = so.reduce((a,o)=>a+o.totalAmount,0);
+        sellerHtml += `<tr>
+          <td>${s.id}</td>
+          <td>${s.name}</td>
+          <td>${s.contact||''}</td>
+          <td>${s.email||''}</td>
+          <td>${so.length}</td>
+          <td>${delivered}</td>
+          <td>${rto}</td>
+          <td>${returns}</td>
+          <td>₹${profitSum}</td>
+          <td>₹${revenueSum}</td>
+          <td><button class="editSellerAdmin" data-id="${s.id}">✏️</button> <button class="deleteSellerAdmin" data-id="${s.id}">🗑️</button></td>
+        <tr>`;
+      });
+      sellerHtml += `</tbody></table>`;
+      document.getElementById("sellerPerformanceTable").innerHTML = sellerHtml;
+      let teamHtml = ""; teams.forEach(t => { teamHtml += `<div class="flex-between"><span>${t.name} (${t.email})<br><small>${t.phone}</small></span><div><button class="editTeamAdmin" data-id="${t.id}">✏️</button><button class="deleteTeamAdmin" data-id="${t.id}">🗑️</button></div></div>`; });
+      document.getElementById("teamMembersList").innerHTML = teamHtml;
+      let topP = [...products].sort((a,b)=>b.salesCount - a.salesCount).slice(0,5);
+      if(window.topChart) window.topChart.destroy();
+      window.topChart = new Chart(document.getElementById("topProductsChart"), { type:'bar', data:{ labels:topP.map(p=>p.name), datasets:[{ label:'Sold', data:topP.map(p=>p.salesCount), backgroundColor:'#3b82f6' }] } });
+      let sellerProfitData = sellers.map(s => orders.filter(o=>o.sellerId===s.id).reduce((a,o)=>a+o.profit,0));
+      if(window.sellerChart) window.sellerChart.destroy();
+      window.sellerChart = new Chart(document.getElementById("sellerProfitChart"), { type:'bar', data:{ labels:sellers.map(s=>s.name), datasets:[{ label:'Profit', data:sellerProfitData, backgroundColor:'#10b981' }] } });
+    }
+
+    // ---------- TEAM RENDER ----------
+    function renderTeam() {
+      if(!currentUser || currentUser.role !== "team") return;
+      document.getElementById("teamNameSpan").innerText = currentUser.name;
+      let myOrders = orders.filter(o => o.assignedTeam === currentUser.id);
+      let tbody = document.querySelector("#teamOrdersTable tbody");
+      tbody.innerHTML = myOrders.map(o => `<tr>
+        <td>${o.orderNumber}</td>
+        <td>${o.customerName}<br><small>${o.customerPhone}</small></td>
+        <td>${renderMedia(o.productMedia, o.mediaType, 30)} ${o.productName}</td>
+        <td>${o.quantity}</td>
+        <td><span class="status-badge">${o.status}</span></td>
+        <td><select class="teamStatus" data-id="${o.id}">${["Pending","Confirmed","Processing","Shipped","Delivered"].map(s=>`<option ${o.status===s?"selected":""}>${s}</option>`)}</select></td>
+        <td><input type="file" class="teamPhoto" data-id="${o.id}" style="width:70px"><button class="uploadTeamPhotoBtn" data-id="${o.id}">Upload</button></td>
+        <td><button class="whatsappTeamBtn" data-phone="${o.customerPhone}" data-order="${o.orderNumber}" data-status="${o.status}" data-img="${o.productMedia}" data-imgtype="${o.mediaType}"><i class="fab fa-whatsapp"></i> Send</button></td>
+        <td><button class="followupTeamBtn" data-id="${o.id}">📝 Follow-up</button></td>
+        <td><button class="timelineTeamBtn" data-id="${o.id}">📋 Timeline</button></td>
+      </tr>`).join('');
+      let prodSel = document.getElementById("teamProductSelect");
+      prodSel.innerHTML = products.map(p=>`<option value="${p.id}" data-media="${p.media}" data-type="${p.mediaType}">${p.name} (₹${p.sellingPrice})</option>`).join('');
+      prodSel.addEventListener("change",()=>{ let opt=prodSel.selectedOptions[0]; let media=opt.dataset.media; let type=opt.dataset.type; let previewDiv=document.getElementById("teamPreviewImg"); if(type==='video') previewDiv.outerHTML = `<video id="teamPreviewImg" width="50" controls src="${media}"></video>`; else previewDiv.src=media; document.getElementById("teamPreviewText").innerText=opt.innerText; });
+      if(products.length) prodSel.dispatchEvent(new Event('change'));
+      let trending = [...products].sort((a,b)=>b.salesCount - a.salesCount);
+      document.getElementById("trendingProductsList").innerHTML = trending.map(p=>`<div class="glass-card" style="padding:0.8rem; text-align:center;"><div>${renderMedia(p.media, p.mediaType, 80)}</div><div><b>${p.name}</b><br>₹${p.sellingPrice}</div><button class="enquiryBtn" data-name="${p.name}" data-price="${p.sellingPrice}" data-img="${p.media}" data-imgtype="${p.mediaType}">📩 Send Enquiry</button></div>`).join('');
+    }
+
+    // Shared modal functions
+    function showEditOrderModal(order) {
+      let html = `<input id="editName" value="${order.customerName}"><input id="editPhone" value="${order.customerPhone}"><input id="editAlt" value="${order.altPhone||''}"><input id="editEmail" value="${order.email||''}"><input id="editAddr" value="${order.address||''}"><input id="editLandmark" value="${order.landmark||''}"><input list="stateList" id="editState" value="${order.state||''}"><input list="cityList" id="editCity" value="${order.city||''}"><input id="editPincode" value="${order.pincode||''}">`;
+      document.getElementById("editOrderFields").innerHTML = html;
+      document.getElementById("editOrderModal").style.display="flex";
+      window.currentOrder = order;
+    }
+    function showFollowupModal(order) {
+      let modal = document.getElementById("followupModal");
+      let followupHtml = `<h4>Follow-ups for Order ${order.orderNumber}</h4>`;
+      if(order.followups && order.followups.length) {
+        order.followups.forEach(f => { followupHtml += `<div class="followup-item"><b>${new Date(f.timestamp).toLocaleString()}</b> ${f.type}: ${f.note}</div>`; });
+      } else {
+        followupHtml += `<div class="followup-item">No follow-ups yet. Add a new task below.</div>`;
+      }
+      document.getElementById("followupDetails").innerHTML = followupHtml;
+      modal.style.display = "flex";
+      window.currentFollowupOrder = order;
+    }
+    function showTimelineModal(order) {
+      let modal = document.getElementById("timelineModal");
+      let allCustomerOrders = orders.filter(o => o.customerPhone === order.customerPhone || (order.email && o.email === order.email));
+      let historyHtml = `<h4>📜 Customer Order History</h4>`;
+      allCustomerOrders.forEach(o => {
+        historyHtml += `<div class="timeline-item"><b>${o.orderNumber}</b> - ${o.status} (${new Date(o.createdAt).toLocaleDateString()})<br>Product: ${o.productName} x${o.quantity}</div>`;
+      });
+      let currentTimeline = `<h4 style="margin-top:12px;">⏱️ Current Order Journey</h4>`;
+      order.timeline.forEach(t => {
+        currentTimeline += `<div class="timeline-item"><b>${new Date(t.timestamp).toLocaleString()}</b> ${t.type}: ${t.note} ${t.photo?`<br><img src="${t.photo}" width="50">`:''}</div>`;
+      });
+      document.getElementById("timelineDetails").innerHTML = historyHtml + currentTimeline;
+      modal.style.display = "flex";
+    }
+    function showEditSellerModal(seller) {
+      document.getElementById("editSellerId").value=seller.id; document.getElementById("editSellerName").value=seller.name; document.getElementById("editSellerContact").value=seller.contact||""; document.getElementById("editSellerEmail").value=seller.email||""; document.getElementById("editSellerAddress").value=seller.address||""; document.getElementById("editSellerModal").style.display="flex"; window.currentSeller=seller;
+    }
+    function showEditProductModal(prod) {
+      document.getElementById("prodId").value = prod.id;
+      document.getElementById("prodName").value = prod.name;
+      document.getElementById("prodSP").value = prod.sellingPrice;
+      document.getElementById("prodCP").value = prod.costPrice;
+      document.getElementById("prodSeller").innerHTML = sellers.map(s=>`<option value="${s.id}" ${prod.sellerId===s.id?'selected':''}>${s.name}</option>`).join('');
+      document.getElementById("prodImageUrl").value = prod.media || "";
+      document.getElementById("prodMediaPreview").innerHTML = prod.media ? (prod.mediaType === 'video' ? `<video src="${prod.media}" width="80" controls></video>` : `<img src="${prod.media}" width="80">`) : '';
+      document.getElementById("addProductModal").style.display = "flex";
+    }
+    function showTeamModal(team=null) {
+      document.getElementById("teamId").value = team?.id || "";
+      document.getElementById("teamFullName").value = team?.name || "";
+      document.getElementById("teamEmailId").value = team?.email || "";
+      document.getElementById("teamMobile").value = team?.phone || "";
+      document.getElementById("teamUsername").value = team?.username || "";
+      document.getElementById("teamPwd").value = "";
+      document.getElementById("addTeamModal").style.display = "flex";
+      window.editTeam = team;
+    }
+
+    // State/City helpers
+    function updateStateList() {
+      let stateDatalist = document.getElementById("stateList");
+      let allStates = Object.keys(defaultCityMap);
+      stateDatalist.innerHTML = "";
+      allStates.forEach(s => { let opt = document.createElement("option"); opt.value = s; stateDatalist.appendChild(opt); });
+    }
+    function updateCityList() {
+      let state = document.getElementById("teamState").value;
+      let cityDatalist = document.getElementById("cityList");
+      cityDatalist.innerHTML = "";
+      let cities = [];
+      if(state && defaultCityMap[state]) cities.push(...defaultCityMap[state]);
+      let userCities = userDefinedCities.filter(c => c.state === state).map(c => c.city);
+      cities.push(...userCities);
+      cities = [...new Set(cities)];
+      cities.forEach(c => { let opt = document.createElement("option"); opt.value = c; cityDatalist.appendChild(opt); });
+    }
+    function saveUserCity(state, city) {
+      if(state && city && !userDefinedCities.some(c => c.state === state && c.city === city)) {
+        userDefinedCities.push({ state, city });
+        persistAll();
+        updateCityList();
+      }
+    }
+
+    // Order creation
+    function checkDuplicateCustomer(phone, email) {
+      return orders.find(o => o.customerPhone === phone || (email && o.email === email && o.email !== ""));
+    }
+    function createOrderByTeam() {
+      let custName = document.getElementById("teamCustName").value.trim();
+      let phone = document.getElementById("teamCustPhone").value.trim();
+      let altPhone = document.getElementById("teamAltPhone").value.trim();
+      let email = document.getElementById("teamEmail").value.trim();
+      let address = document.getElementById("teamAddress").value.trim();
+      let landmark = document.getElementById("teamLandmark").value.trim();
+      let state = document.getElementById("teamState").value.trim();
+      let city = document.getElementById("teamCity").value.trim();
+      let pincode = document.getElementById("teamPincode").value.trim();
+      let prodId = document.getElementById("teamProductSelect").value;
+      let qty = parseInt(document.getElementById("teamQty").value) || 1;
+      if (!custName || !phone || !address || !state || !city || !pincode || !prodId) {
+        showErrorPopup("All required fields (Name, Phone, Address, State, City, Pincode, Product) must be filled");
+        return;
+      }
+      saveUserCity(state, city);
+      let existing = checkDuplicateCustomer(phone, email);
+      if (existing) {
+        let msg = `⚠️ A customer with this mobile number or email already exists:\n\nExisting Customer: ${existing.customerName}\nPhone: ${existing.customerPhone}\nEmail: ${existing.email || 'N/A'}\n\nDo you want to continue placing order for this customer?`;
+        showErrorPopup(msg, () => { proceedWithOrder(custName, phone, altPhone, email, address, landmark, state, city, pincode, prodId, qty); }, () => { document.getElementById("duplicateErrorModal").style.display = "none"; });
+        return;
+      }
+      proceedWithOrder(custName, phone, altPhone, email, address, landmark, state, city, pincode, prodId, qty);
+    }
+    function proceedWithOrder(custName, phone, altPhone, email, address, landmark, state, city, pincode, prodId, qty) {
+      let prod = products.find(p => p.id === prodId);
+      if (!prod) return;
+      let seller = sellers.find(s => s.id === prod.sellerId);
+      let total = prod.sellingPrice * qty;
+      let profit = (prod.sellingPrice - prod.costPrice) * qty;
+      let orderData = { custName, phone, altPhone, email, address, landmark, state, city, pincode,
+        productId: prod.id, productName: prod.name, productMedia: prod.media, mediaType: prod.mediaType,
+        sellerId: prod.sellerId, sellerName: seller.name, qty, sellingPrice: prod.sellingPrice,
+        costPrice: prod.costPrice, totalAmount: total, profit };
+      let confirmHtml = `<div><strong>Customer Name:</strong> ${custName}</div>
+                        <div><strong>Mobile:</strong> +91${phone}</div>
+                        <div><strong>Alternate:</strong> ${altPhone || '-'}</div>
+                        <div><strong>Email:</strong> ${email || '-'}</div>
+                        <div><strong>Address:</strong> ${address}</div>
+                        <div><strong>Landmark:</strong> ${landmark || '-'}</div>
+                        <div><strong>State:</strong> ${state}</div>
+                        <div><strong>City:</strong> ${city}</div>
+                        <div><strong>Pincode:</strong> ${pincode}</div>
+                        <div><strong>Product:</strong> ${prod.name} (x${qty})</div>
+                        <div><strong>Total Amount:</strong> ₹${total}</div>`;
+      document.getElementById("confirmOrderDetails").innerHTML = confirmHtml;
+      document.getElementById("confirmOrderModal").style.display = "flex";
+      window.pendingOrderData = orderData;
+    }
+
+    // Profile and export
+    function showProfileModal() {
+      document.getElementById("profileName").value = currentUser.name;
+      document.getElementById("profileEmail").value = currentUser.email;
+      document.getElementById("profileMobile").value = currentUser.mobile || "";
+      document.getElementById("profileUsername").value = currentUser.username || "";
+      document.getElementById("profilePassword").value = "";
+      document.getElementById("profileModal").style.display = "flex";
+    }
+    function saveProfile() {
+      let newName = document.getElementById("profileName").value;
+      let newEmail = document.getElementById("profileEmail").value;
+      let newMobile = document.getElementById("profileMobile").value;
+      let newUsername = document.getElementById("profileUsername").value;
+      let newPwd = document.getElementById("profilePassword").value;
+      if(newName) currentUser.name = newName;
+      if(newEmail) currentUser.email = newEmail;
+      if(newMobile) currentUser.mobile = newMobile;
+      if(newUsername) currentUser.username = newUsername;
+      if(newPwd) currentUser.password = newPwd;
+      if(currentUser.role === "admin") {
+        let admin = HARDCODED_USERS.find(u=>u.role==="admin");
+        if(admin) { admin.name=currentUser.name; admin.email=currentUser.email; admin.mobile=currentUser.mobile; admin.username=currentUser.username; if(newPwd) admin.password=newPwd; }
+      } else {
+        let team = teams.find(t=>t.id===currentUser.id);
+        if(team) { team.name=currentUser.name; team.email=currentUser.email; team.phone=currentUser.mobile; team.username=currentUser.username; if(newPwd) team.password=newPwd; }
+      }
+      persistAll();
+      if(currentUser.role === "admin") renderAdmin(); else renderTeam();
+      document.getElementById("profileModal").style.display = "none";
+      toast("Profile updated");
+    }
+    function exportMetrics() {
+      let filtered = getFilteredOrders();
+      let metric = document.getElementById("exportMetric").value;
+      let total = filtered.length, pending = filtered.filter(o=>o.status==="Pending").length, delivered = filtered.filter(o=>o.status==="Delivered").length;
+      let revenue = filtered.reduce((s,o)=>s+o.totalAmount,0), profit = filtered.reduce((s,o)=>s+o.profit,0);
+      let value = metric==="orders"?total: metric==="pending"?pending: metric==="delivered"?delivered: metric==="revenue"?revenue:profit;
+      let csv = [["Metric","Value"],[metric, value]];
+      let blob = new Blob([csv.map(r=>r.join(",")).join("\n")],{type:"text/csv"});
+      let a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`export_${metric}.csv`; a.click(); toast("Exported");
+    }
+    function exportFullOrders() {
+      let filtered = getFilteredOrders();
+      let csv = [["OrderID","Customer","Phone","Product","Seller","Team","Qty","Amount","Profit","Status","Date"]];
+      filtered.forEach(o=>csv.push([o.orderNumber, o.customerName, o.customerPhone, o.productName, o.sellerName, teams.find(t=>t.id===o.assignedTeam)?.name||'', o.quantity, o.totalAmount, o.profit, o.status, new Date(o.createdAt).toLocaleString()]));
+      let blob = new Blob([csv.map(r=>r.join(",")).join("\n")],{type:"text/csv"});
+      let a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="full_orders.csv"; a.click(); toast("Full orders exported");
+    }
+
+    // Login / Logout
+    function handleLogin() {
+      let identifier = document.getElementById("loginIdentifier").value.trim();
+      let password = document.getElementById("loginPassword").value.trim();
+      if (!identifier || !password) { document.getElementById("loginError").innerText = "Enter both fields"; return; }
+      rebuildUsersArray();
+      let user = window.users.find(u => u.email === identifier || u.username === identifier || u.mobile === identifier || (u.mobile && u.mobile.replace(/^\+91/, '') === identifier));
+      if (!user || user.password !== password) { document.getElementById("loginError").innerText = "Invalid credentials"; return; }
+      currentUser = user;
+      localStorage.setItem("jc_currentUser", JSON.stringify({id: currentUser.id, role: currentUser.role, name: currentUser.name}));
+      document.getElementById("loginSection").classList.add("hidden");
+      if (currentUser.role === "admin") { document.getElementById("adminDash").classList.remove("hidden"); renderAdmin(); }
+      else { document.getElementById("teamDash").classList.remove("hidden"); renderTeam(); }
+    }
+    function logout() { currentUser = null; localStorage.removeItem("jc_currentUser"); document.querySelectorAll("#adminDash,#teamDash").forEach(el=>el.classList.add("hidden")); document.getElementById("loginSection").classList.remove("hidden"); }
+    function toast(msg) { let t=document.createElement("div"); t.className="toast"; t.innerText=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2500); }
+
+    // ---------- EVENT DELEGATION (for dynamic buttons) ----------
+    function setupDelegatedEvents() {
+      document.addEventListener('click', function(e) {
+        // Admin events
+        if(e.target.classList && e.target.classList.contains('editCustomerBtn')) {
+          let orderId = e.target.getAttribute('data-id');
+          let order = orders.find(o => o.id === orderId);
+          if(order) showEditOrderModal(order);
+        }
+        if(e.target.classList && e.target.classList.contains('deleteOrderAdmin')) {
+          let orderId = e.target.getAttribute('data-id');
+          if(confirm("Delete order permanently?")) {
+            orders = orders.filter(o => o.id !== orderId);
+            persistAll();
+            if(currentUser.role === "admin") renderAdmin();
+            toast("Order deleted");
+          }
+        }
+        if(e.target.classList && e.target.classList.contains('viewTimelineAdmin')) {
+          let orderId = e.target.getAttribute('data-id');
+          let order = orders.find(o => o.id === orderId);
+          if(order) showTimelineModal(order);
+        }
+        if(e.target.classList && e.target.classList.contains('adminStatusChange')) {
+          let orderId = e.target.getAttribute('data-id');
+          let newStatus = e.target.value;
+          let order = orders.find(o => o.id === orderId);
+          if(order) {
+            order.status = newStatus;
+            order.timeline.push({type:"Admin", note:`Status changed to ${newStatus}`, timestamp:Date.now()});
+            persistAll();
+            if(currentUser.role === "admin") renderAdmin();
+            toast("Order status updated");
+          }
+        }
+        if(e.target.classList && e.target.classList.contains('editProdAdmin')) {
+          let prodId = e.target.getAttribute('data-id');
+          let prod = products.find(p => p.id === prodId);
+          if(prod) showEditProductModal(prod);
+        }
+        if(e.target.classList && e.target.classList.contains('delProdAdmin')) {
+          let prodId = e.target.getAttribute('data-id');
+          if(confirm("Delete product?")) {
+            products = products.filter(p => p.id !== prodId);
+            persistAll();
+            if(currentUser.role === "admin") renderAdmin();
+            toast("Product deleted");
+          }
+        }
+        if(e.target.classList && e.target.classList.contains('editSellerAdmin')) {
+          let sellerId = e.target.getAttribute('data-id');
+          let seller = sellers.find(s => s.id === sellerId);
+          if(seller) showEditSellerModal(seller);
+        }
+        if(e.target.classList && e.target.classList.contains('deleteSellerAdmin')) {
+          let sellerId = e.target.getAttribute('data-id');
+          if(confirm("Delete seller?")) {
+            sellers = sellers.filter(s => s.id !== sellerId);
+            persistAll();
+            if(currentUser.role === "admin") renderAdmin();
+            toast("Seller deleted");
+          }
+        }
+        if(e.target.classList && e.target.classList.contains('editTeamAdmin')) {
+          let teamId = e.target.getAttribute('data-id');
+          let team = teams.find(t => t.id === teamId);
+          if(team) showTeamModal(team);
+        }
+        if(e.target.classList && e.target.classList.contains('deleteTeamAdmin')) {
+          let teamId = e.target.getAttribute('data-id');
+          if(confirm("Delete team member?")) {
+            teams = teams.filter(t => t.id !== teamId);
+            rebuildUsersArray();
+            persistAll();
+            if(currentUser.role === "admin") renderAdmin();
+            toast("Team member deleted");
+          }
+        }
+        // Team events
+        if(e.target.classList && e.target.classList.contains('teamStatus')) {
+          let orderId = e.target.getAttribute('data-id');
+          let newStatus = e.target.value;
+          let order = orders.find(o => o.id === orderId);
+          if(order && order.assignedTeam === currentUser.id) {
+            order.status = newStatus;
+            order.timeline.push({type:"Team", note:`Status changed to ${newStatus}`, timestamp:Date.now()});
+            persistAll();
+            if(currentUser.role === "team") renderTeam();
+            toast("Order status updated");
+          }
+        }
+        if(e.target.classList && e.target.classList.contains('uploadTeamPhotoBtn')) {
+          let orderId = e.target.getAttribute('data-id');
+          let fileInput = e.target.previousElementSibling;
+          if(fileInput && fileInput.files.length) {
+            let reader = new FileReader();
+            reader.onload = ev => {
+              let order = orders.find(o => o.id === orderId);
+              if(order) {
+                order.timeline.push({type:"Photo", note:"Proof uploaded", photo:ev.target.result, timestamp:Date.now()});
+                persistAll();
+                if(currentUser.role === "team") renderTeam();
+                toast("Photo proof added");
+              }
+            };
+            reader.readAsDataURL(fileInput.files[0]);
+          } else toast("Select a photo first");
+        }
+        if(e.target.classList && e.target.classList.contains('whatsappTeamBtn')) {
+          let phone = e.target.getAttribute('data-phone');
+          if(!phone || phone.length < 10) { toast("Invalid customer phone number"); return; }
+          let orderId = e.target.getAttribute('data-order');
+          let status = e.target.getAttribute('data-status');
+          let img = e.target.getAttribute('data-img');
+          let imgType = e.target.getAttribute('data-imgtype');
+          let mediaMsg = img ? (imgType === 'video' ? `Product video: ${img}` : `Product image: ${img}`) : "";
+          let msg = `✅ Order ${orderId} update: Status is ${status}. ${mediaMsg}`;
+          let cleanPhone = phone.replace(/\D/g, '');
+          window.open(`https://wa.me/91${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+        if(e.target.classList && e.target.classList.contains('followupTeamBtn')) {
+          let orderId = e.target.getAttribute('data-id');
+          let order = orders.find(o => o.id === orderId);
+          if(order) showFollowupModal(order);
+        }
+        if(e.target.classList && e.target.classList.contains('timelineTeamBtn')) {
+          let orderId = e.target.getAttribute('data-id');
+          let order = orders.find(o => o.id === orderId);
+          if(order) showTimelineModal(order);
+        }
+        if(e.target.classList && e.target.classList.contains('enquiryBtn')) {
+          let ph = prompt("Customer WhatsApp number (10 digits)");
+          if(ph && ph.match(/^\d{10}$/)) {
+            let productName = e.target.getAttribute('data-name');
+            let price = e.target.getAttribute('data-price');
+            let img = e.target.getAttribute('data-img');
+            let imgType = e.target.getAttribute('data-imgtype');
+            let mediaMsg = img ? (imgType === 'video' ? `Product video: ${img}` : `Product image: ${img}`) : "";
+            let msg = `🔥 Special offer: ${productName} at just ₹${price}! High quality product. ${mediaMsg}`;
+            window.open(`https://wa.me/91${ph}?text=${encodeURIComponent(msg)}`, '_blank');
+          } else if(ph) toast("Enter valid 10-digit mobile number");
+        }
+      });
+    }
+
+    // Save product modal
+    document.getElementById("confirmProductBtn")?.addEventListener("click",()=>{
+      let id = document.getElementById("prodId").value;
+      let name = document.getElementById("prodName").value.trim();
+      let sp = parseFloat(document.getElementById("prodSP").value);
+      let cp = parseFloat(document.getElementById("prodCP").value);
+      let sellerId = document.getElementById("prodSeller").value;
+      let mediaUrl = document.getElementById("prodImageUrl").value.trim();
+      let file = document.getElementById("prodImageFile").files[0];
+      if(!name || isNaN(sp) || isNaN(cp) || !sellerId) { showErrorPopup("Fill all required fields"); return; }
+      let finalMedia = mediaUrl || "https://via.placeholder.com/100";
+      let mediaType = "image";
+      if(mediaUrl && (mediaUrl.includes('.mp4') || mediaUrl.includes('youtube.com') || mediaUrl.includes('youtu.be') || mediaUrl.includes('video'))) mediaType = "video";
+      if(file) {
+        let reader = new FileReader();
+        reader.onload = ev => {
+          let p = products.find(pr=>pr.id===id);
+          if(id && p) { p.name=name; p.sellingPrice=sp; p.costPrice=cp; p.sellerId=sellerId; p.media=ev.target.result; p.mediaType=file.type.startsWith('video/')?'video':'image'; }
+          else products.push({ id:"p"+Date.now(), name, sellerId, costPrice:cp, sellingPrice:sp, stock:100, media:ev.target.result, mediaType:file.type.startsWith('video/')?'video':'image', salesCount:0 });
+          persistAll(); if(currentUser.role==="admin") renderAdmin(); document.getElementById("addProductModal").style.display="none"; toast("Product saved");
+        };
+        reader.readAsDataURL(file);
+      } else {
+        let p = products.find(pr=>pr.id===id);
+        if(id && p) { p.name=name; p.sellingPrice=sp; p.costPrice=cp; p.sellerId=sellerId; p.media=finalMedia; p.mediaType=mediaType; }
+        else products.push({ id:"p"+Date.now(), name, sellerId, costPrice:cp, sellingPrice:sp, stock:100, media:finalMedia, mediaType, salesCount:0 });
+        persistAll(); if(currentUser.role==="admin") renderAdmin(); document.getElementById("addProductModal").style.display="none"; toast("Product saved");
+      }
+    });
+    document.getElementById("closeProductModal")?.addEventListener("click",()=>document.getElementById("addProductModal").style.display="none");
+    document.getElementById("prodImageUrl")?.addEventListener("input",function(){
+      let url = this.value;
+      let preview = document.getElementById("prodMediaPreview");
+      if(url.includes('.mp4')||url.includes('youtube')||url.includes('youtu.be')) preview.innerHTML = `<video src="${url}" width="80" controls></video>`;
+      else preview.innerHTML = `<img src="${url}" width="80">`;
+    });
+
+    document.getElementById("saveOrderEditBtn")?.addEventListener("click",()=>{
+      let o = window.currentOrder;
+      if(o) {
+        o.customerName = document.getElementById("editName").value;
+        o.customerPhone = document.getElementById("editPhone").value;
+        o.altPhone = document.getElementById("editAlt").value;
+        o.email = document.getElementById("editEmail").value;
+        o.address = document.getElementById("editAddr").value;
+        o.landmark = document.getElementById("editLandmark").value;
+        o.state = document.getElementById("editState").value;
+        o.city = document.getElementById("editCity").value;
+        o.pincode = document.getElementById("editPincode").value;
+        persistAll();
+        if(currentUser.role === "admin") renderAdmin(); else renderTeam();
+        document.getElementById("editOrderModal").style.display = "none";
+        toast("Customer details updated");
+      }
+    });
+    document.getElementById("closeEditModal")?.addEventListener("click",()=>document.getElementById("editOrderModal").style.display="none");
+
+    document.getElementById("addFollowupBtn")?.addEventListener("click",()=>{
+      if(window.currentFollowupOrder) {
+        let note = document.getElementById("newFollowupNote").value.trim();
+        let type = document.getElementById("followupType").value;
+        if(note) {
+          if(!window.currentFollowupOrder.followups) window.currentFollowupOrder.followups = [];
+          window.currentFollowupOrder.followups.push({ type, note, timestamp: Date.now() });
+          persistAll();
+          showFollowupModal(window.currentFollowupOrder);
+          document.getElementById("newFollowupNote").value = "";
+          toast("Follow-up added successfully");
+        } else toast("Please enter a note");
+      }
+    });
+    document.getElementById("closeFollowupModal")?.addEventListener("click",()=>document.getElementById("followupModal").style.display="none");
+    document.getElementById("closeTimelineModal")?.addEventListener("click",()=>document.getElementById("timelineModal").style.display="none");
+
+    document.getElementById("updateSellerBtn")?.addEventListener("click",()=>{
+      let s = window.currentSeller;
+      if(s) {
+        s.name = document.getElementById("editSellerName").value;
+        s.contact = document.getElementById("editSellerContact").value;
+        s.email = document.getElementById("editSellerEmail").value;
+        s.address = document.getElementById("editSellerAddress").value;
+        persistAll();
+        if(currentUser.role === "admin") renderAdmin();
+        document.getElementById("editSellerModal").style.display = "none";
+        toast("Seller updated");
+      }
+    });
+    document.getElementById("closeSellerModal")?.addEventListener("click",()=>document.getElementById("editSellerModal").style.display="none");
+
+    document.getElementById("saveTeamBtn")?.addEventListener("click",()=>{
+      let id = document.getElementById("teamId").value;
+      let name = document.getElementById("teamFullName").value.trim();
+      let email = document.getElementById("teamEmailId").value.trim();
+      let mobile = document.getElementById("teamMobile").value.trim();
+      let uname = document.getElementById("teamUsername").value.trim();
+      let pwd = document.getElementById("teamPwd").value.trim();
+      if(!name || !email || !pwd) { showErrorPopup("Name, Email and Password are required"); return; }
+      let existing = teams.find(t => (t.email === email || t.phone === mobile || t.username === uname) && t.id !== id);
+      if(existing) { showErrorPopup("Duplicate! A team member with same Email, Mobile or Username already exists."); return; }
+      if(id) {
+        let t = teams.find(te=>te.id===id);
+        if(t) { t.name=name; t.email=email; t.phone=mobile; t.username=uname; if(pwd) t.password=pwd; }
+      } else {
+        let newId = "team_"+Date.now();
+        teams.push({ id:newId, name, email, phone:mobile, username:uname, password:pwd });
+      }
+      rebuildUsersArray(); persistAll(); if(currentUser.role === "admin") renderAdmin(); document.getElementById("addTeamModal").style.display="none"; toast("Team saved");
+    });
+    document.getElementById("closeTeamModal")?.addEventListener("click",()=>document.getElementById("addTeamModal").style.display="none");
+
+    document.getElementById("confirmAddSellerBtn")?.addEventListener("click",()=>{
+      let name = document.getElementById("newSellerName").value.trim();
+      let contact = document.getElementById("newSellerContact").value.trim();
+      let email = document.getElementById("newSellerEmail").value.trim();
+      let address = document.getElementById("newSellerAddress").value.trim();
+      if(!name || !contact) { showErrorPopup("Name and Mobile number are required"); return; }
+      let existing = sellers.find(s => s.contact === contact || (email && s.email === email));
+      if(existing) { showErrorPopup("Duplicate! A seller with same mobile or email already exists."); return; }
+      let newId = generateSellerId(name);
+      sellers.push({ id:newId, name, contact, email, address });
+      persistAll(); if(currentUser.role === "admin") renderAdmin(); document.getElementById("addSellerDetailModal").style.display="none"; toast(`Seller ${name} added`);
+    });
+    document.getElementById("closeSellerAddModal")?.addEventListener("click",()=>document.getElementById("addSellerDetailModal").style.display="none");
+
+    document.getElementById("editBeforeConfirmBtn")?.addEventListener("click", () => { document.getElementById("confirmOrderModal").style.display = "none"; });
+    document.getElementById("proceedConfirmBtn")?.addEventListener("click", () => {
+      let data = window.pendingOrderData;
+      if (!data) return;
+      let newOrder = { id: "ord"+Date.now(), orderNumber: "JCK"+Math.floor(1000+Math.random()*9000),
+        customerName: data.custName, customerPhone: data.phone, altPhone: data.altPhone, email: data.email,
+        address: data.address, landmark: data.landmark, state: data.state, city: data.city, pincode: data.pincode,
+        productId: data.productId, productName: data.productName, productMedia: data.productMedia, mediaType: data.mediaType,
+        sellerId: data.sellerId, sellerName: data.sellerName, quantity: data.qty,
+        sellingPrice: data.sellingPrice, costPrice: data.costPrice, totalAmount: data.totalAmount, profit: data.profit,
+        status: "Pending", assignedTeam: currentUser.id,
+        timeline: [{ type: "Created", note: "Order placed by team", timestamp: Date.now() }], followups: [], createdAt: Date.now() };
+      orders.unshift(newOrder);
+      persistAll();
+      if(currentUser.role === "team") renderTeam();
+      if(currentUser.role === "admin") renderAdmin();
+      document.getElementById("confirmOrderModal").style.display = "none";
+      document.getElementById("teamCustName").value = ""; document.getElementById("teamCustPhone").value = "";
+      document.getElementById("teamAltPhone").value = ""; document.getElementById("teamEmail").value = "";
+      document.getElementById("teamAddress").value = ""; document.getElementById("teamLandmark").value = "";
+      document.getElementById("teamPincode").value = "";
+      toast("Order placed successfully!");
+    });
+    document.getElementById("continueWithNewOrder")?.addEventListener("click", () => {
+      document.getElementById("duplicateErrorModal").style.display = "none";
+      if(window.duplicateContinueCallback) window.duplicateContinueCallback();
+    });
+    document.getElementById("cancelDuplicateOrder")?.addEventListener("click", () => {
+      document.getElementById("duplicateErrorModal").style.display = "none";
+      if(window.duplicateCancelCallback) window.duplicateCancelCallback();
+    });
+
+    // Static button bindings
+    document.getElementById("doLoginBtn")?.addEventListener("click", handleLogin);
+    document.getElementById("adminLogout")?.addEventListener("click", logout);
+    document.getElementById("teamLogout")?.addEventListener("click", logout);
+    document.getElementById("teamCreateOrderBtn")?.addEventListener("click", createOrderByTeam);
+    document.getElementById("applyFiltersBtn")?.addEventListener("click", () => { if(currentUser.role === "admin") renderAdmin(); });
+    document.getElementById("refreshAdminBtn")?.addEventListener("click", () => { if(currentUser.role === "admin") renderAdmin(); });
+    document.getElementById("adminAddProductBtn")?.addEventListener("click", () => {
+      document.getElementById("prodId").value = ""; document.getElementById("prodName").value = ""; document.getElementById("prodSP").value = ""; document.getElementById("prodCP").value = "";
+      document.getElementById("prodSeller").innerHTML = sellers.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+      document.getElementById("prodImageUrl").value = ""; document.getElementById("prodImageFile").value = ""; document.getElementById("prodMediaPreview").innerHTML = "";
+      document.getElementById("addProductModal").style.display = "flex";
+    });
+    document.getElementById("adminAddSellerBtn")?.addEventListener("click", () => {
+      document.getElementById("newSellerName").value = ""; document.getElementById("newSellerContact").value = ""; document.getElementById("newSellerEmail").value = ""; document.getElementById("newSellerAddress").value = "";
+      document.getElementById("addSellerDetailModal").style.display = "flex";
+    });
+    document.getElementById("addTeamMemberBtn")?.addEventListener("click", () => showTeamModal());
+    document.getElementById("exportReportBtn")?.addEventListener("click", exportMetrics);
+    document.getElementById("exportFullReportBtn")?.addEventListener("click", exportFullOrders);
+    document.getElementById("adminProfileBtn")?.addEventListener("click", showProfileModal);
+    document.getElementById("teamProfileBtn")?.addEventListener("click", showProfileModal);
+    document.getElementById("saveProfileBtn")?.addEventListener("click", saveProfile);
+    document.getElementById("closeProfileModal")?.addEventListener("click", () => document.getElementById("profileModal").style.display = "none");
+    document.querySelectorAll(".tab-btn").forEach(btn => btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      document.querySelectorAll(".tab-content").forEach(t=>t.classList.add("hidden"));
+      document.getElementById(`tab${btn.dataset.tab.charAt(0).toUpperCase()+btn.dataset.tab.slice(1)}`).classList.remove("hidden");
+    }));
+    function darkToggle() { document.body.classList.toggle("dark"); }
+    document.getElementById("darkToggleLogin")?.addEventListener("click", darkToggle);
+    document.getElementById("darkAdmin")?.addEventListener("click", darkToggle);
+    document.getElementById("darkTeam")?.addEventListener("click", darkToggle);
+
+    // Initialize
+    updateStateList();
+    document.getElementById("teamState")?.addEventListener("input", updateCityList);
+    document.getElementById("teamState")?.addEventListener("change", updateCityList);
+    document.getElementById("teamCity")?.addEventListener("change", function() {
+      let state = document.getElementById("teamState").value;
+      let city = this.value;
+      if(state && city) saveUserCity(state, city);
+    });
+    setupDelegatedEvents();
+
+    // Restore session
+    let saved = localStorage.getItem("jc_currentUser");
+    if (saved) {
+      try {
+        let u = JSON.parse(saved);
+        rebuildUsersArray();
+        let full = window.users.find(us => us.id === u.id);
+        if (full) {
+          currentUser = full;
+          if (full.role === "admin") {
+            document.getElementById("loginSection").classList.add("hidden");
+            document.getElementById("adminDash").classList.remove("hidden");
+            renderAdmin();
+          } else if (full.role === "team") {
+            document.getElementById("loginSection").classList.add("hidden");
+            document.getElementById("teamDash").classList.remove("hidden");
+            renderTeam();
+          }
+        }
+      } catch(e) { console.error("Session restore error", e); }
+    }
+  })();
+</script>
+</body>
+</html>
