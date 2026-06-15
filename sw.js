@@ -1,4 +1,4 @@
-const CACHE_NAME = 'justclickpick-v1';
+const CACHE_NAME = 'justclickpick-v2';
 const urlsToCache = [
   './',
   './index.html',
